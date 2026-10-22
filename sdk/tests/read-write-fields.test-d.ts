@@ -37,6 +37,20 @@ describe('ReadWriteField', () => {
 		assertType<Input>({ value: '**********' });
 	});
 
+	test('preserves builtins and distributes unions in the write type', () => {
+		type Input = NestedPartial<{
+			value: ReadWriteField<string, Date | { token: string } | null>;
+		}>;
+
+		expectTypeOf<Input['value']>().toEqualTypeOf<Date | { token?: string } | null | undefined>();
+		assertType<Input>({ value: new Date() });
+		assertType<Input>({ value: {} });
+		assertType<Input>({ value: null });
+
+		// @ts-expect-error the response type is not a valid write value
+		assertType<Input>({ value: 'redacted' });
+	});
+
 	test('applies the types to generic item commands', () => {
 		const _readSecret = () => client.request(readItem('secrets', 1, { fields: ['value'] }));
 		const _createSecret = () => client.request(createItem('secrets', { value: { token: 'secret' } }));
